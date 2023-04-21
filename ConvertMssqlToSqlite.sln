@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.4.33213.308
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConvertMssqlToSqlite", "ConvertMssqlToSqlite\ConvertMssqlToSqlite.csproj", "{BA283046-9EFD-400E-8E4C-FE94F4C25CDF}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{BA283046-9EFD-400E-8E4C-FE94F4C25CDF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BA283046-9EFD-400E-8E4C-FE94F4C25CDF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BA283046-9EFD-400E-8E4C-FE94F4C25CDF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BA283046-9EFD-400E-8E4C-FE94F4C25CDF}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {5410F6E3-E6CF-4FA2-BBEE-984C7F44821B}
+	EndGlobalSection
+EndGlobal
