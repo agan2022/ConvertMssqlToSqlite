@@ -7,7 +7,7 @@ class Program
 {
     static void Main(string[] args)
     {
-        string mssql_conn_str = "Data Source=.;Initial Catalog=CPSDB;Integrated Security=True";
+        string mssql_conn_str = "Data Source=.;Initial Catalog=AganWeb_DB;Integrated Security=True";
         string sqlite_conn_str = "Data Source=C:\\sqlite\\test\\CSPDB.db;Version=3;";
 
         // Connect to the MSSQL database
@@ -20,57 +20,77 @@ class Program
             {
                 sqlite_conn.Open();
 
-                // Get a list of tables in the MSSQL database
-                DataTable tables = mssql_conn.GetSchema("Tables");
-                foreach (DataRow table in tables.Rows)
+                using (SQLiteTransaction transaction = sqlite_conn.BeginTransaction())
                 {
-                    string table_name = table[2].ToString();
-
-                    // Create a corresponding table in the SQLite database
-                    SqlCommand cmd = new SqlCommand($"SELECT TOP 0 * FROM {table_name}", mssql_conn);
-                    using (SqlDataReader reader = cmd.ExecuteReader(CommandBehavior.SchemaOnly))
+                    Console.WriteLine("Start Conversion");
+                    try
                     {
-                        DataTable schema = reader.GetSchemaTable();
-                        string column_definitions = "";
-                        foreach (DataRow row in schema.Rows)
+                        // Get a list of tables in the MSSQL database
+                        DataTable tables = mssql_conn.GetSchema("Tables");
+                        foreach (DataRow table in tables.Rows)
                         {
-                            string column_name = row["ColumnName"].ToString();
-                            string data_type = row["DataTypeName"].ToString();
-                            column_definitions += $"`{column_name}` {MapDataType(data_type)}, ";
-                        }
-                        column_definitions = column_definitions.TrimEnd(',', ' ');
-                        string create_query = $"CREATE TABLE `{table_name}` ({column_definitions})";
-                        using (SQLiteCommand sqlite_cmd = new SQLiteCommand(create_query, sqlite_conn))
-                        {
-                            sqlite_cmd.ExecuteNonQuery();
-                        }
-                    }
+                            string table_name = table[2].ToString();
 
-                    // Insert the data from the MSSQL table into the SQLite table
-                    cmd = new SqlCommand($"SELECT * FROM {table_name}", mssql_conn);
-                    using (SqlDataReader reader = cmd.ExecuteReader())
-                    {
-                        while (reader.Read())
-                        {
-                            string placeholders = "";
-                            for (int i = 0; i < reader.FieldCount; i++)
+                            // Create a corresponding table in the SQLite database
+                            SqlCommand cmd = new SqlCommand($"SELECT TOP 0 * FROM {table_name}", mssql_conn);
+                            using (SqlDataReader reader = cmd.ExecuteReader(CommandBehavior.SchemaOnly))
                             {
-                                placeholders += "?, ";
-                            }
-                            placeholders = placeholders.TrimEnd(',', ' ');
-                            string insert_query = $"INSERT INTO `{table_name}` VALUES ({placeholders})";
-                            using (SQLiteCommand insert_cmd = new SQLiteCommand(insert_query, sqlite_conn))
-                            {
-                                for (int i = 0; i < reader.FieldCount; i++)
+                                DataTable schema = reader.GetSchemaTable();
+                                string column_definitions = "";
+                                foreach (DataRow row in schema.Rows)
                                 {
-                                    insert_cmd.Parameters.AddWithValue($"@{i}", reader[i]);
+                                    string column_name = row["ColumnName"].ToString();
+                                    string data_type = row["DataTypeName"].ToString();
+                                    column_definitions += $"`{column_name}` {MapDataType(data_type)}, ";
                                 }
-                                insert_cmd.ExecuteNonQuery();
+                                column_definitions = column_definitions.TrimEnd(',', ' ');
+                                string create_query = $"CREATE TABLE `{table_name}` ({column_definitions})";
+
+                                using (SQLiteCommand sqlite_cmd = new SQLiteCommand(create_query, sqlite_conn))
+                                {
+                                    sqlite_cmd.ExecuteNonQuery();
+                                }
+
+                                Console.WriteLine($"{table_name} was transferred successfully");
+                            }
+
+                            // Insert the data from the MSSQL table into the SQLite table
+                            cmd = new SqlCommand($"SELECT * FROM {table_name}", mssql_conn);
+                            using (SqlDataReader reader = cmd.ExecuteReader())
+                            {
+                                while (reader.Read())
+                                {
+                                    string placeholders = "";
+                                    for (int i = 0; i < reader.FieldCount; i++)
+                                    {
+                                        placeholders += "?, ";
+                                    }
+                                    placeholders = placeholders.TrimEnd(',', ' ');
+                                    string insert_query = $"INSERT INTO `{table_name}` VALUES ({placeholders})";
+                                    using (SQLiteCommand insert_cmd = new SQLiteCommand(insert_query, sqlite_conn))
+                                    {
+                                        for (int i = 0; i < reader.FieldCount; i++)
+                                        {
+                                            insert_cmd.Parameters.AddWithValue($"@{i}", reader[i]);
+                                        }
+                                        insert_cmd.ExecuteNonQuery();
+                                    }
+                                }
                             }
                         }
+
+                        // commit the transaction after all inserts complete
+                        transaction.Commit();
+                        Console.WriteLine("Conversion complete!");
+                    }
+                    catch (Exception ex)
+                    {
+                        // rollback the transaction if any part of the code throws an exception
+                        transaction.Rollback();
+                        Console.WriteLine("Conversion failed: " + ex.Message);
+                        throw;
                     }
                 }
-                Console.WriteLine("Conversion complete!");
             }
         }
     }
